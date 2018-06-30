@@ -230,17 +230,6 @@ public class ServicesAdminServiceImpl extends RemoteServiceServlet implements
         throw new RequestFailureException(ErrorConsts.FORM_DEFINITION_INVALID);
       }
 
-      StringBuilder sb = new StringBuilder();
-      sb.append("NETVOTE****************************************************\n");
-      sb.append("form = ").append(form).append("\n");
-        sb.append("accessKey = ").append(accessKey).append("\n");
-        sb.append("secretKey = ").append(secretKey).append("\n");
-        sb.append("network = ").append(network).append("\n");
-        sb.append("esOption = ").append(esOption).append("\n");
-        sb.append("ownerEmail = ").append(ownerEmail).append("\n");
-        sb.append("cc = ").append(cc).append("\n");
-     log(sb.toString());
-
       NetvotePublisher np = new NetvotePublisher(form, accessKey, secretKey, network, esOption, ownerEmail, cc);
       np.initiate(cc);
       return np.getFormServiceCursor().getUri();

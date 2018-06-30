@@ -1,6 +1,7 @@
 package org.opendatakit.aggregate.externalservice;
 
 
+import org.opendatakit.aggregate.constants.externalservice.NetvoteConsts;
 import org.opendatakit.aggregate.constants.externalservice.NetvoteNetwork;
 import org.opendatakit.common.persistence.CommonFieldsBase;
 import org.opendatakit.common.persistence.DataField;
@@ -8,6 +9,9 @@ import org.opendatakit.common.persistence.Datastore;
 import org.opendatakit.common.persistence.exception.ODKDatastoreException;
 import org.opendatakit.common.security.User;
 import org.opendatakit.common.web.CallingContext;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public final class NetvotePublisherParameterTable extends CommonFieldsBase {
 
@@ -25,6 +29,8 @@ public final class NetvotePublisherParameterTable extends CommonFieldsBase {
     private static final DataField OWNER_EMAIL_PROPERTY = new DataField(
             "OWNER_EMAIL", DataField.DataType.STRING, true, 4096L);
 
+    private static final Map<String, String> networkToLambda = new HashMap<String,String>();
+
 
     private static NetvotePublisherParameterTable relation = null;
 
@@ -35,6 +41,9 @@ public final class NetvotePublisherParameterTable extends CommonFieldsBase {
         fieldList.add(SECRET_KEY_PROPERTY);
         fieldList.add(NETWORK_PROPERTY);
         fieldList.add(OWNER_EMAIL_PROPERTY);
+
+        networkToLambda.put("ropsten", NetvoteConsts.ROPSTEN_ADD_OBSERVATION);
+        networkToLambda.put("private", NetvoteConsts.PRIVATE_ADD_OBSERVATION);
     }
 
     /**
@@ -81,6 +90,15 @@ public final class NetvotePublisherParameterTable extends CommonFieldsBase {
         if (!setStringField(NETWORK_PROPERTY, value)) {
             throw new IllegalArgumentException("overflow network");
         }
+    }
+
+    public String getLambdaName() {
+        String network = this.getNetworkProperty();
+        String lambda = networkToLambda.get(network);
+        if(lambda == null){
+            throw new IllegalStateException("Invalid network found somehow: "+network);
+        }
+        return lambda;
     }
 
     public String getAccessKeyProperty() {

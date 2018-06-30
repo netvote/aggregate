@@ -30,7 +30,7 @@ public class NetvoteConsts {
 
     public static final String PRIVATE_ADD_OBSERVATION = "private-add-observation";
     public static final String ROPSTEN_ADD_OBSERVATION = "netvote-add-observation";
-    public static final String IPFS_GATEWAY = "https://ipfs.infura.io";
+    public static final String IPFS_PIN_URL = "https://ipfs.infura.io:5001/api/v0/add?pin=true";
 
     public static final Map<NetvoteNetwork, String>  networkLambdas = new HashMap<NetvoteNetwork, String>();
     static {

@@ -8,6 +8,7 @@ buildscript {
     classpath 'de.richsource.gradle.plugins:gwt-gradle-plugin:0.6'
     classpath 'de.undercouch:gradle-download-task:3.3.0'
     classpath "com.avast.gradle:gradle-docker-compose-plugin:0.6.8"
+    classpath "io.spring.gradle:dependency-management-plugin:1.0.3.RELEASE"
   }
 }
 
@@ -23,6 +24,7 @@ apply plugin: 'gwt'
 apply plugin: 'de.undercouch.download'
 apply from: 'https://raw.github.com/akhikhl/gretty/master/pluginScripts/gretty.plugin'
 apply plugin: 'docker-compose'
+apply plugin: "io.spring.dependency-management"
 
 
 group = 'org.opendatakit'
@@ -89,6 +91,12 @@ configurations.all {
   exclude group: 'commons-logging', module: 'commons-logging'
 }
 
+dependencyManagement {
+  imports {
+    mavenBom 'com.amazonaws:aws-java-sdk-bom:1.11.228'
+  }
+}
+
 dependencies {
   compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
   compile group: 'org.slf4j', name: 'jcl-over-slf4j', version: '1.7.25' // JCL over SLF4J
@@ -144,6 +152,7 @@ dependencies {
   compile group: 'com.google.appengine', name: 'appengine-api-1.0-sdk', version: versions.gae
   compile group: 'com.google.appengine', name: 'appengine-api-labs', version: versions.gae
   compile group: 'com.google.appengine', name: 'appengine-jsr107cache', version: versions.gae
+  compile 'com.amazonaws:aws-java-sdk-lambda'
   compileOnly group: 'javax.servlet', name: 'javax.servlet-api', version: versions.servletApi
   testCompile group: 'junit', name: 'junit', version: versions.junit
   testCompile group: 'org.springframework', name: 'spring-test', version: versions.spring
