@@ -344,7 +344,14 @@ public abstract class AbstractExternalService implements ExternalService {
   protected static final <T extends CommonFieldsBase> T newEntity(T parameterTableRelation, CallingContext cc) throws ODKDatastoreException {
     Datastore ds = cc.getDatastore();
     User user = cc.getCurrentUser();
-    return ds.createEntityUsingRelation(parameterTableRelation, user);
+    T res = ds.createEntityUsingRelation(parameterTableRelation, user);
+    StringBuilder sb = new StringBuilder();
+    sb.append("NETVOTE****************************************************\n");
+
+    sb.append("T = ").append(res).append("\n");
+    System.out.println(sb.toString());
+
+    return res;
   }
 
   /**

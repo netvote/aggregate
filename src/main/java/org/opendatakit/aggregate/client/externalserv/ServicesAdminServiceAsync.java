@@ -16,10 +16,14 @@
 
 package org.opendatakit.aggregate.client.externalserv;
 
+import org.opendatakit.aggregate.client.exception.FormNotAvailableException;
+import org.opendatakit.aggregate.client.exception.RequestFailureException;
 import org.opendatakit.aggregate.constants.common.BinaryOption;
 import org.opendatakit.aggregate.constants.common.ExternalServicePublicationOption;
 
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import org.opendatakit.common.persistence.client.exception.DatastoreFailureException;
+import org.opendatakit.common.security.client.exception.AccessDeniedException;
 
 public interface ServicesAdminServiceAsync {
 
@@ -41,6 +45,8 @@ public interface ServicesAdminServiceAsync {
 
   void createRedCapServer(String formId, String apiKey, String url,
       ExternalServicePublicationOption esOption, String ownerEmail, AsyncCallback<String> callback);
+
+  void createNetvotePublisher(String formId, String accessKey, String secret, String network, ExternalServicePublicationOption esOption, String ownerEmail, AsyncCallback<String> callback);
 
   void deletePublisher(String uri, AsyncCallback<Boolean> callback);
 

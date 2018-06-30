@@ -32,14 +32,7 @@ import org.opendatakit.aggregate.constants.common.FormActionStatusTimestamp;
 import org.opendatakit.aggregate.constants.common.OperationalStatus;
 import org.opendatakit.aggregate.exception.ODKExternalServiceException;
 import org.opendatakit.aggregate.exception.ODKFormNotFoundException;
-import org.opendatakit.aggregate.externalservice.AbstractExternalService;
-import org.opendatakit.aggregate.externalservice.ExternalService;
-import org.opendatakit.aggregate.externalservice.FormServiceCursor;
-import org.opendatakit.aggregate.externalservice.FusionTable;
-import org.opendatakit.aggregate.externalservice.GoogleSpreadsheet;
-import org.opendatakit.aggregate.externalservice.JsonServer;
-import org.opendatakit.aggregate.externalservice.OhmageJsonServer;
-import org.opendatakit.aggregate.externalservice.REDCapServer;
+import org.opendatakit.aggregate.externalservice.*;
 import org.opendatakit.aggregate.form.FormFactory;
 import org.opendatakit.aggregate.form.IForm;
 import org.opendatakit.aggregate.form.MiscTasks;
@@ -221,6 +214,52 @@ public class ServicesAdminServiceImpl extends RemoteServiceServlet implements
   }
 
   @Override
+  public String createNetvotePublisher(String formId, String accessKey, String secretKey, String network, ExternalServicePublicationOption esOption, String ownerEmail) throws AccessDeniedException, FormNotAvailableException, RequestFailureException, DatastoreFailureException {
+    HttpServletRequest req = this.getThreadLocalRequest();
+    CallingContext cc = ContextFactory.getCallingContext(this, req);
+
+    try {
+      FormActionStatusTimestamp deletionTimestamp = MiscTasks
+              .getFormDeletionStatusTimestampOfFormId(formId, cc);
+      if (deletionTimestamp != null) {
+        throw new RequestFailureException(
+                "Form is marked for deletion - publishing request for Netvote publisher aborted.");
+      }
+      IForm form = FormFactory.retrieveFormByFormId(formId, cc);
+      if (!form.hasValidFormDefinition()) {
+        throw new RequestFailureException(ErrorConsts.FORM_DEFINITION_INVALID);
+      }
+
+      StringBuilder sb = new StringBuilder();
+      sb.append("NETVOTE****************************************************\n");
+      sb.append("form = ").append(form).append("\n");
+        sb.append("accessKey = ").append(accessKey).append("\n");
+        sb.append("secretKey = ").append(secretKey).append("\n");
+        sb.append("network = ").append(network).append("\n");
+        sb.append("esOption = ").append(esOption).append("\n");
+        sb.append("ownerEmail = ").append(ownerEmail).append("\n");
+        sb.append("cc = ").append(cc).append("\n");
+     log(sb.toString());
+
+      NetvotePublisher np = new NetvotePublisher(form, accessKey, secretKey, network, esOption, ownerEmail, cc);
+      np.initiate(cc);
+      return np.getFormServiceCursor().getUri();
+    } catch (ODKOverQuotaException e) {
+      e.printStackTrace();
+      throw new RequestFailureException(ErrorConsts.QUOTA_EXCEEDED);
+    } catch (ODKFormNotFoundException e) {
+      e.printStackTrace();
+      throw new FormNotAvailableException(e);
+    } catch (ODKDatastoreException e) {
+      e.printStackTrace();
+      throw new DatastoreFailureException(e);
+    } catch (ODKExternalServiceException e) {
+      e.printStackTrace();
+      throw new RequestFailureException(e);
+    }
+  }
+
+  @Override
   public String createSimpleJsonServer(String formId, String authKey, String url,
       ExternalServicePublicationOption esOption, String ownerEmail, BinaryOption binaryOption)
       throws AccessDeniedException, FormNotAvailableException, RequestFailureException,
@@ -361,7 +400,7 @@ public class ServicesAdminServiceImpl extends RemoteServiceServlet implements
         throw new RequestFailureException("Service description not found for this publisher");
       }
       OperationalStatus status = fsc.getOperationalStatus();
-      if ( status != OperationalStatus.BAD_CREDENTIALS && 
+      if ( status != OperationalStatus.BAD_CREDENTIALS &&
            status != OperationalStatus.ABANDONED &&
            status != OperationalStatus.PAUSED ) {
         throw new RequestFailureException(

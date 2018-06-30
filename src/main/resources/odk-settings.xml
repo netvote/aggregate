@@ -21,9 +21,9 @@
 	<!--Datasource configuration-->
 	<bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close" >
 		<property name="driverClassName" value="${jdbc.driverClassName}" />
-		<property name="url" value="${jdbc.url}" />
-        <property name="username" value="${jdbc.username}" />
-        <property name="password" value="${jdbc.password}" />
+		<property name="url" value="jdbc:postgresql://${RDS_HOSTNAME}:${RDS_PORT}/${RDS_DB_NAME}?autoDeserialize=true" />
+        <property name="username" value="${RDS_USERNAME}" />
+        <property name="password" value="${RDS_PASSWORD}" />
 		<property name="maxIdle" value="10"/>
 		<property name="minIdle" value="5"/>
 		<property name="maxTotal" value="100"/>

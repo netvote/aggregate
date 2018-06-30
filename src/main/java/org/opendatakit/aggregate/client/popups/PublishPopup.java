@@ -26,6 +26,7 @@ import org.opendatakit.aggregate.client.widgets.EnumListBox;
 import org.opendatakit.aggregate.constants.common.BinaryOption;
 import org.opendatakit.aggregate.constants.common.ExternalServicePublicationOption;
 import org.opendatakit.aggregate.constants.common.ExternalServiceType;
+import org.opendatakit.aggregate.constants.externalservice.NetvoteNetwork;
 import org.opendatakit.common.security.client.UserSecurityInfo;
 
 import com.google.gwt.event.dom.client.ChangeEvent;
@@ -68,6 +69,12 @@ public final class PublishPopup extends AbstractPopupBase {
   private final FlexTable gsBar;
   private final TextBox gsName;
 
+  // to hold the netvote only options
+  private final FlexTable nvBar;
+  private final TextBox nvAccessKey;
+  private final TextBox nvSecretKey;
+  private final TextBox nvNetwork;
+
   // to hold the jsonServer only options
   private final FlexTable jsBar;
   private final TextBox jsAuthKey;
@@ -102,7 +109,7 @@ public final class PublishPopup extends AbstractPopupBase {
     ExternalServiceType[] valuesToShow = { ExternalServiceType.GOOGLE_FUSIONTABLES,
         ExternalServiceType.GOOGLE_SPREADSHEET,
         ExternalServiceType.REDCAP_SERVER, ExternalServiceType.JSON_SERVER,
-        ExternalServiceType.OHMAGE_JSON_SERVER };
+        ExternalServiceType.OHMAGE_JSON_SERVER, ExternalServiceType.NETVOTE_PUBLISHER };
     serviceType = new EnumListBox<ExternalServiceType>(valuesToShow, ES_TYPE_TOOLTIP,
         ES_TYPE_BALLOON);
     serviceType.addChangeHandler(new ExternalServiceTypeChangeHandler());
@@ -127,6 +134,26 @@ public final class PublishPopup extends AbstractPopupBase {
     optionsBar.addStyleName("flexTableBorderTopStretchWidth");
     optionsBar.setWidget(1, 0, new HTML("<h3>Data to Publish:</h3>"));
     optionsBar.setWidget(1, 1, esOptions);
+
+    // netvote
+    nvBar = new FlexTable();
+    nvBar.addStyleName("stretch_header");
+    // get the URL
+    nvBar.setWidget(1, 0, new HTML("<h3>Access key:</h3>"));
+    nvAccessKey = new TextBox();
+    nvAccessKey.setVisibleLength(20);
+    nvBar.setWidget(1, 1, nvAccessKey);
+
+    nvBar.setWidget(2, 0, new HTML("<h3>Secret key:</h3>"));
+    nvSecretKey = new TextBox();
+    nvSecretKey.setVisibleLength(45);
+    nvBar.setWidget(2, 1, nvSecretKey);
+
+    nvBar.setWidget(3, 0, new HTML("<h3>Network:</h3>"));
+    nvNetwork = new TextBox();
+    nvNetwork.setText("private");
+    nvNetwork.setVisibleLength(45);
+    nvBar.setWidget(3, 1, nvNetwork);
 
     // this is only for google spreadsheets
     gsBar = new FlexTable();
@@ -215,10 +242,12 @@ public final class PublishPopup extends AbstractPopupBase {
     grouping.add(jsBar);
     grouping.add(rcBar);
     grouping.add(ohmageBar);
+    grouping.add(nvBar);
     gsBar.setVisible(false);
     jsBar.setVisible(false);
     rcBar.setVisible(false);
     ohmageBar.setVisible(false);
+    nvBar.setVisible(false);
     optionsBar.setWidget(2, 0, grouping);
     optionsBar.getFlexCellFormatter().setColSpan(2, 0, 2);
 
@@ -244,6 +273,7 @@ public final class PublishPopup extends AbstractPopupBase {
       gsBar.setVisible(false);
       jsBar.setVisible(false);
       rcBar.setVisible(false);
+      nvBar.setVisible(false);
       ohmageBar.setVisible(false);
       publishButton.setEnabled(false);
       return;
@@ -256,6 +286,7 @@ public final class PublishPopup extends AbstractPopupBase {
       gsBar.setVisible(true);
       jsBar.setVisible(false);
       rcBar.setVisible(false);
+      nvBar.setVisible(false);
       ohmageBar.setVisible(false);
       optionsBar.getRowFormatter().setStyleName(2, "enabledTableRow");
       break;
@@ -263,6 +294,7 @@ public final class PublishPopup extends AbstractPopupBase {
       gsBar.setVisible(false);
       jsBar.setVisible(true);
       rcBar.setVisible(false);
+      nvBar.setVisible(false);
       ohmageBar.setVisible(false);
       optionsBar.getRowFormatter().setStyleName(2, "enabledTableRow");
       break;
@@ -270,6 +302,7 @@ public final class PublishPopup extends AbstractPopupBase {
       gsBar.setVisible(false);
       jsBar.setVisible(false);
       rcBar.setVisible(false);
+      nvBar.setVisible(false);
       ohmageBar.setVisible(true);
       optionsBar.getRowFormatter().setStyleName(2, "enabledTableRow");
       break;
@@ -277,6 +310,7 @@ public final class PublishPopup extends AbstractPopupBase {
       gsBar.setVisible(false);
       jsBar.setVisible(false);
       rcBar.setVisible(true);
+      nvBar.setVisible(false);
       ohmageBar.setVisible(false);
       optionsBar.getRowFormatter().setStyleName(2, "enabledTableRow");
       break;
@@ -284,8 +318,17 @@ public final class PublishPopup extends AbstractPopupBase {
       gsBar.setVisible(false);
       jsBar.setVisible(false);
       rcBar.setVisible(false);
+      nvBar.setVisible(false);
       ohmageBar.setVisible(false);
       optionsBar.getRowFormatter().setStyleName(2, "disabledTableRow");
+      break;
+    case NETVOTE_PUBLISHER:
+      gsBar.setVisible(false);
+      jsBar.setVisible(false);
+      rcBar.setVisible(false);
+      nvBar.setVisible(true);
+      ohmageBar.setVisible(false);
+      optionsBar.getRowFormatter().setStyleName(2, "enabledTableRow");
       break;
     default: // unknown type
       gsBar.setVisible(false);
@@ -347,6 +390,10 @@ public final class PublishPopup extends AbstractPopupBase {
       case GOOGLE_FUSIONTABLES:
         SecureGWT.getServicesAdminService().createFusionTable(formId, serviceOp, ownerEmail,
             new ReportFailureCallback());
+        break;
+        case NETVOTE_PUBLISHER:
+        SecureGWT.getServicesAdminService().createNetvotePublisher(formId, nvAccessKey.getText(), nvSecretKey.getText(), nvNetwork.getText(), serviceOp, ownerEmail,
+                new ReportFailureCallback());
         break;
       default: // unknown type
         break;

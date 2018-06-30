@@ -421,6 +421,11 @@ public final class FormServiceCursor extends CommonFieldsBase {
 
    public static final ExternalService constructExternalService(FormServiceCursor fsc, IForm form,
        CallingContext cc) throws ODKEntityNotFoundException, ODKOverQuotaException {
+     try{
+       throw new RuntimeException("NETVOTE");
+     } catch(RuntimeException e){
+       e.printStackTrace();
+     }
      try {
        switch (fsc.getExternalServiceType()) {
        case GOOGLE_FUSIONTABLES:
@@ -442,6 +447,8 @@ public final class FormServiceCursor extends CommonFieldsBase {
             ds.deleteEntity(fsc.getEntityKey(), user);
        }
          return null;
+       case NETVOTE_PUBLISHER:
+         return new NetvotePublisher(fsc, form, cc);
        default:
          return null;
        }
