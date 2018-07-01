@@ -55,7 +55,10 @@ public final class PublishPopup extends AbstractPopupBase {
  
   private static final String BO_TYPE_TOOLTIP = "Sets how the binary data from Media should be published";
   private static final String BO_TYPE_BALLOON = "Selects how the binary dat from Media should be published. Aggregate will provide links in the publish OR will embed the data in the publish";
-  
+
+  private static final String NV_NETWORK_TOOLTIP = "Blockchain network to publish to";
+  private static final String NV_NETWORK_BALLOON = "Ropsten is a public Ethereum test network.  Private is a private Netvote Ethereum network.";
+
   // this is the main flex table for the popup
   private final FlexTable layout;
   // this is the header
@@ -73,7 +76,8 @@ public final class PublishPopup extends AbstractPopupBase {
   private final FlexTable nvBar;
   private final TextBox nvAccessKey;
   private final TextBox nvSecretKey;
-  private final TextBox nvNetwork;
+  private final EnumListBox<NetvoteNetwork> nvNetworkOptions;
+
 
   // to hold the jsonServer only options
   private final FlexTable jsBar;
@@ -150,10 +154,8 @@ public final class PublishPopup extends AbstractPopupBase {
     nvBar.setWidget(2, 1, nvSecretKey);
 
     nvBar.setWidget(3, 0, new HTML("<h3>Network:</h3>"));
-    nvNetwork = new TextBox();
-    nvNetwork.setText("private");
-    nvNetwork.setVisibleLength(45);
-    nvBar.setWidget(3, 1, nvNetwork);
+    nvNetworkOptions = new EnumListBox<NetvoteNetwork>(NetvoteNetwork.values(), NV_NETWORK_TOOLTIP, NV_NETWORK_BALLOON);
+    nvBar.setWidget(3, 1, nvNetworkOptions);
 
     // this is only for google spreadsheets
     gsBar = new FlexTable();
@@ -392,7 +394,7 @@ public final class PublishPopup extends AbstractPopupBase {
             new ReportFailureCallback());
         break;
         case NETVOTE_PUBLISHER:
-        SecureGWT.getServicesAdminService().createNetvotePublisher(formId, nvAccessKey.getText(), nvSecretKey.getText(), nvNetwork.getText(), serviceOp, ownerEmail,
+        SecureGWT.getServicesAdminService().createNetvotePublisher(formId, nvAccessKey.getText(), nvSecretKey.getText(), nvNetworkOptions.getSelectedValue().toLowerCase(), serviceOp, ownerEmail,
                 new ReportFailureCallback());
         break;
       default: // unknown type

@@ -128,8 +128,8 @@ public class NetvotePublisher extends AbstractExternalService implements Externa
                 .build();
     }
 
-    public void submitToBlockchain(AWSLambda client, String scope, String reference, long timestamp) throws ODKExternalServiceException {
-        String payload = String.format("{\"scope\":\"%s\",\"reference\":\"%s\",\"timestamp\":%d}", scope, reference, timestamp);
+    public void submitToBlockchain(AWSLambda client, String scope, String submitId, String reference, long timestamp) throws ODKExternalServiceException {
+        String payload = String.format("{\"scope\":\"%s\",\"submitId\":\"%s\",\"reference\":\"%s\",\"timestamp\":%d}", scope, submitId, reference, timestamp);
 
         InvokeRequest req = new InvokeRequest()
                 .withFunctionName(objectEntity.getLambdaName())
@@ -216,9 +216,8 @@ public class NetvotePublisher extends AbstractExternalService implements Externa
             logger.info("NETVOTE: Starting Publish of data: "+submission);
 
             OhmageJsonTypes.Survey survey = new OhmageJsonTypes.Survey();
-            // TODO: figure out these values
-
             OhmageJsonElementFormatter formatter = new OhmageJsonElementFormatter();
+
             // called purely for side effects
             submission.getFormattedValuesAsRow(null, formatter, false, cc);
             survey.setResponses(formatter.getResponses());
@@ -230,8 +229,7 @@ public class NetvotePublisher extends AbstractExternalService implements Externa
                 for (String ref : references) {
                     logger.info("NETVOTE: IPFS ref = " + ref);
                     long timestamp = submission.getSubmissionDate().getTime();
-                    String scope = String.format("%s/%s", submission.getFormId(), submission.getKey().getKey());
-                    submitToBlockchain(client, scope, ref, timestamp);
+                    submitToBlockchain(client, submission.getFormId(), submission.getKey().getKey(), ref, timestamp);
                 }
             }
 

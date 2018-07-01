@@ -39,6 +39,7 @@
   <source path='client/table'/>
   <source path='client/widgets'/>
   <source path='constants/common'/>
+  <source path='constants/externalservice'/>
   <!-- tables only -->
   <source path='client/odktables'/>
 </module>
