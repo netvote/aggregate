@@ -22,6 +22,7 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -63,6 +64,12 @@ public class FormXmlServlet extends ServletUtilBase {
    */
   private static final String TITLE_INFO = "Form Xml Viewer";
 
+  @Override
+  public void doOptions(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    super.doOptions(req, resp);
+    applyCors(resp);
+  }
+
   /**
    * Handler for HTTP Get request that responds with the XML in plain
    *
@@ -71,7 +78,7 @@ public class FormXmlServlet extends ServletUtilBase {
    */
   @Override
   public void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-
+    applyCors(resp);
     // get parameters
     String formId = getParameter(req, ServletConsts.FORM_ID);
     if (formId == null) {
@@ -132,6 +139,7 @@ public class FormXmlServlet extends ServletUtilBase {
         out.println("<PRE>");
         out.print(StringEscapeUtils.escapeHtml4(xmlString));// form xml
         out.println("</PRE>");
+
         finishBasicHtmlResponse(resp); // footer info
       } else {
         resp.setCharacterEncoding(HtmlConsts.UTF8_ENCODE);

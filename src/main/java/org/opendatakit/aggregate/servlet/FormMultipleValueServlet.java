@@ -20,6 +20,7 @@ package org.opendatakit.aggregate.servlet;
 import java.io.IOException;
 import java.util.List;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -60,6 +61,12 @@ public class FormMultipleValueServlet extends ServletUtilBase {
      * Title for generated webpage
      */
     private static final String TITLE_INFO = "Submissions Results: ";
+
+    @Override
+    public void doOptions(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        super.doOptions(req, resp);
+        applyCors(resp);
+    }
 
     /**
      * Handler for HTTP Get request that responds with list of values from a

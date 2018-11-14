@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -52,6 +53,12 @@ public class FormListServlet extends ServletUtilBase {
    * URI from base
    */
   public static final String ADDR = "formList";
+
+  @Override
+  public void doOptions(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    super.doOptions(req, resp);
+    applyCors(resp);
+  }
 
   /**
    * Handler for HTTP Get request that responds with an XML list of forms to

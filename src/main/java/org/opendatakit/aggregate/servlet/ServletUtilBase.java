@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -46,6 +47,12 @@ public class ServletUtilBase extends CommonServletBase {
   
   protected ServletUtilBase() {
     super(ServletConsts.APPLICATION_NAME);
+  }
+
+  @Override
+  public void doOptions(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    super.doOptions(req, resp);
+    applyCors(resp);
   }
 
   /**
@@ -140,6 +147,14 @@ public class ServletUtilBase extends CommonServletBase {
    return d;
   }
 
+  protected void applyCors(HttpServletResponse resp) {
+    resp.setHeader("Access-Control-Allow-Origin", "*");
+    resp.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, HEAD, OPTIONS");
+    resp.setHeader("Access-Control-Allow-Credentials", "true");
+    resp.setHeader("Access-Control-Allow-Headers", "Content-Type,x-openrosa-version,authorization");
+    resp.setHeader("Access-Control-Max-Age", "86400");
+  }
+
   protected final void addOpenRosaHeaders(HttpServletResponse resp) {
    resp.setHeader(ServletConsts.OPEN_ROSA_VERSION_HEADER, ServletConsts.OPEN_ROSA_VERSION );
     GregorianCalendar g = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
@@ -148,6 +163,7 @@ public class ServletUtilBase extends CommonServletBase {
     formatter.setCalendar(g);
     resp.setHeader(ApiConstants.DATE_HEADER,  formatter.format(new Date()));
     resp.setHeader(ServletConsts.OPEN_ROSA_ACCEPT_CONTENT_LENGTH_HEADER, "10485760"); // 10MB
+    applyCors(resp);
   }
 
   protected final void addOpenDataKitHeaders(HttpServletResponse resp) {
@@ -157,6 +173,7 @@ public class ServletUtilBase extends CommonServletBase {
     SimpleDateFormat formatter = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss zz");
     formatter.setCalendar(g);
     resp.setHeader(ApiConstants.DATE_HEADER,  formatter.format(new Date()));
+    applyCors(resp);
   }
 
   @Override

@@ -20,6 +20,7 @@ package org.opendatakit.aggregate.servlet;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -126,6 +127,12 @@ public class FormUploadServlet extends ServletUtilBase {
       + "<br>"
       + "<p>On ODK Collect 1.1.7 and higher, the file named \"<code>form_logo.png</code>\","
       + "if present in the media folder, will be displayed as the form's logo. </p>" + "</div>\n";
+  @Override
+  public void doOptions(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    super.doOptions(req, resp);
+    applyCors(resp);
+  }
+
 
   /**
    * Title for generated webpage to obtain title
