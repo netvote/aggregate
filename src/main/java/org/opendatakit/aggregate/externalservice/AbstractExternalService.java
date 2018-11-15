@@ -16,9 +16,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -149,8 +147,11 @@ public abstract class AbstractExternalService implements ExternalService {
     ds.putEntity(fsc, user);
   }
 
+  protected HttpResponse sendHttpRequest(String method, String url, HttpEntity entity, List<NameValuePair> qparams, CallingContext cc) throws IOException {
+    return sendHttpRequest(method, url, entity, qparams, new HashMap<>(), cc);
+  }
 
-  protected HttpResponse sendHttpRequest(String method, String url, HttpEntity entity, List<NameValuePair> qparams, CallingContext cc) throws
+  protected HttpResponse sendHttpRequest(String method, String url, HttpEntity entity, List<NameValuePair> qparams, Map<String,String> headers, CallingContext cc) throws
       IOException {
 
     // setup client
@@ -224,6 +225,10 @@ public abstract class AbstractExternalService implements ExternalService {
       request = put;
     } else {
       throw new IllegalStateException("Unexpected request method");
+    }
+
+    for(String key : headers.keySet()){
+      request.setHeader(key, headers.get(key));
     }
 
     HttpResponse resp = client.execute(request);

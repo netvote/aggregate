@@ -5,17 +5,13 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
-import com.amazonaws.services.lambda.model.InvocationType;
-import com.amazonaws.services.lambda.model.InvokeRequest;
-import com.amazonaws.services.lambda.model.InvokeResult;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.ByteArrayBody;
@@ -40,10 +36,9 @@ import org.opendatakit.common.web.CallingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
-import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -88,12 +83,13 @@ public class NetvotePublisher extends AbstractExternalService implements Externa
                 formServiceCursor, form, cc);
     }
 
-    public NetvotePublisher(IForm form, String accessKey, String secretKey, String network,
+    public NetvotePublisher(IForm form, String formId, String accessKey, String secretKey, String network,
                       ExternalServicePublicationOption externalServiceOption, String ownerEmail, CallingContext cc)
             throws ODKDatastoreException {
         this(newEntity(NetvotePublisherParameterTable.assertRelation(cc), cc), form, externalServiceOption,
                 ownerEmail, cc);
 
+        objectEntity.setFormId(formId);
         objectEntity.setAccessKeyProperty(accessKey);
         objectEntity.setSecretKeyProperty(secretKey);
         objectEntity.setNetworkProperty(network);
@@ -116,78 +112,35 @@ public class NetvotePublisher extends AbstractExternalService implements Externa
         return null;
     }
 
-    private AWSLambda getLambdaClient() {
-        Regions region = Regions.fromName("us-east-1");
 
-        BasicAWSCredentials credentials = new
-                BasicAWSCredentials(objectEntity.getAccessKeyProperty(), objectEntity.getSecretKeyProperty());
-
-        return AWSLambdaClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                .withRegion(region)
-                .build();
-    }
-
-    public void submitToBlockchain(AWSLambda client, String scope, String submitId, String reference, long timestamp) throws ODKExternalServiceException {
-        String payload = String.format("{\"scope\":\"%s\",\"submitId\":\"%s\",\"reference\":\"%s\",\"timestamp\":%d}", scope, submitId, reference, timestamp);
-
-        InvokeRequest req = new InvokeRequest()
-                .withFunctionName(objectEntity.getLambdaName())
-                .withInvocationType(InvocationType.Event)
-                .withPayload(payload);
-
-        InvokeResult ir = client.invoke(req);
-        if(ir.getStatusCode() != 202){
-            throw new ODKExternalServiceException("failure syncing to blockchain");
-        }
-        logger.info(String.format("NETVOTE: Published to blockchain, payload: %s", payload));
-    }
-
-    public List<String> uploadToIPFS(List<OhmageJsonTypes.Survey> surveys, Map<UUID, ByteArrayBody> photos,
-                              CallingContext cc) throws ClientProtocolException, IOException, ODKExternalServiceException,
-            URISyntaxException {
-
-
+    private String uploadItemToIPFS(String apiKey, String entryName, ByteArrayBody item,  CallingContext cc) throws IOException {
         MultipartEntityBuilder builder = MultipartEntityBuilder.create();
         builder.setMode(HttpMultipartMode.STRICT)
                 .setCharset(UTF_CHARSET);
 
-        ContentType utf8Text = ContentType.create(ContentType.TEXT_PLAIN.getMimeType(), UTF_CHARSET);
-        // emit the configured publisher parameters if the values are non-empty...
+        Map<String,String> headers = new HashMap<>();
+        headers.put("x-api-key", apiKey);
 
-        // emit the client identity and the json representation of the survey...
-        builder.addTextBody("survey", gson.toJson(surveys), utf8Text);
+        builder.addPart(entryName, item);
+
+        HttpResponse response = super.sendHttpRequest(POST, NetvoteConsts.IPFS_PIN_URL, builder.build(), null, headers, cc);
+        return WebUtils.readResponse(response);
+    }
+
+
+    private List<String> uploadToIPFS(List<OhmageJsonTypes.Survey> surveys, Map<UUID, ByteArrayBody> photos,
+                              CallingContext cc) throws ClientProtocolException, IOException, ODKExternalServiceException {
+
+        String apiKey = objectEntity.getAccessKeyProperty();
+
+        List<String> results = new ArrayList<>();
 
         // emit the file streams for all the media attachments
         for (Map.Entry<UUID, ByteArrayBody> entry : photos.entrySet()) {
-            builder.addPart(entry.getKey().toString(), entry.getValue());
+            String hash = uploadItemToIPFS(apiKey, entry.getKey().toString(), entry.getValue(), cc);
+            results.add(hash);
         }
 
-        // ADD TO IPFS
-        HttpResponse response = super.sendHttpRequest(POST, NetvoteConsts.IPFS_PIN_URL, builder.build(), null, cc);
-        String responseString = WebUtils.readResponse(response);
-        logger.info("NETVOTE: IPFS upload response: "+responseString);
-
-        int statusCode = response.getStatusLine().getStatusCode();
-
-        if (statusCode == HttpServletResponse.SC_UNAUTHORIZED) {
-            throw new ODKExternalServiceCredentialsException("failure from server: " + statusCode
-                    + " response: " + responseString);
-        } else if (statusCode >= 300) {
-            throw new ODKExternalServiceException("failure from server: " + statusCode + " response: "
-                    + responseString);
-        }
-
-        String[] res = responseString.split("\\{");
-        List<String> results = new ArrayList<>();
-
-        for(String s: res){
-            if(!s.trim().isEmpty()) {
-                Type type = new TypeToken<Map<String, String>>(){}.getType();
-                Map<String, String> ipfsResultMap = gson.fromJson(responseString, type);
-                results.add(ipfsResultMap.get("Name"));
-            }
-        }
         return results;
     }
 
@@ -201,6 +154,106 @@ public class NetvotePublisher extends AbstractExternalService implements Externa
         }
         cache.put(id, true);
         return true;
+    }
+
+    private class Payload {
+        String value;
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+    }
+
+    private class SubmissionObj {
+        String odkFormId;
+        String odkSubmitId;
+        String submission;
+        List<String> attachments;
+
+        public String getSubmission() {
+            return submission;
+        }
+
+        public void setSubmission(String submission) {
+            this.submission = submission;
+        }
+
+        public List<String> getAttachments() {
+            return attachments;
+        }
+
+        public void setAttachments(List<String> attachments) {
+            this.attachments = attachments;
+        }
+
+        public String getOdkFormId() {
+            return odkFormId;
+        }
+
+        public void setOdkFormId(String odkFormId) {
+            this.odkFormId = odkFormId;
+        }
+
+        public String getOdkSubmitId() {
+            return odkSubmitId;
+        }
+
+        public void setOdkSubmitId(String odkSubmitId) {
+            this.odkSubmitId = odkSubmitId;
+        }
+    }
+
+    private String getJwtToken(CallingContext cc) throws IOException {
+        String submitKey = objectEntity.getSecretKeyProperty();
+        String apiKey = objectEntity.getAccessKeyProperty();
+        String formId = objectEntity.getFormIdProperty();
+
+        Map<String,String> headers = new HashMap<>();
+        headers.put("x-api-key", apiKey);
+        headers.put("Authorization", "Bearer "+submitKey);
+
+        String url = String.format("%s/form/%s/auth/jwt", NetvoteConsts.NETROSA_ENDPOINT, formId);
+        HttpEntity entity = new StringEntity("blank");
+
+        HttpResponse response = super.sendHttpRequest(POST, url, entity, null, headers, cc);
+        String respJson = WebUtils.readResponse(response);
+
+        //TODO: remove this log line
+        logger.info("NETVOTE token JSON: "+respJson);
+
+        Type type = new TypeToken<Map<String, String>>(){}.getType();
+        Map<String, String> myMap = gson.fromJson(respJson, type);
+        return myMap.get("token");
+    }
+
+    private void submitToNetrosa(SubmissionObj obj, CallingContext cc) throws IOException {
+        String apiKey = objectEntity.getAccessKeyProperty();
+        String formId = objectEntity.getFormIdProperty();
+
+        String submissionString = gson.toJson(obj);
+        Payload p = new Payload();
+        p.setValue(submissionString);
+
+        String payloadBody = gson.toJson(p);
+        logger.info("NETVOTE: Sending payload body="+payloadBody);
+
+        String jwtToken = getJwtToken(cc);
+
+        HttpEntity entity = new StringEntity(payloadBody);
+
+        Map<String,String> headers = new HashMap<>();
+        headers.put("x-api-key", apiKey);
+        headers.put("Authorization", "Bearer "+jwtToken);
+
+        String url = String.format("%s/form/%s/submission", NetvoteConsts.NETROSA_ENDPOINT, formId);
+
+        HttpResponse response = super.sendHttpRequest(POST, url, entity, null, headers, cc);
+        String resp = WebUtils.readResponse(response);
+        logger.info("NETVOTE: Submitted payload to API"+resp+", url="+url);
     }
 
     @Override
@@ -222,16 +275,16 @@ public class NetvotePublisher extends AbstractExternalService implements Externa
             submission.getFormattedValuesAsRow(null, formatter, false, cc);
             survey.setResponses(formatter.getResponses());
 
-            List<String> references = uploadToIPFS(Collections.singletonList(survey), formatter.getPhotos(), cc);
+            List<String> attachments = uploadToIPFS(Collections.singletonList(survey), formatter.getPhotos(), cc);
+            String submissionJson = gson.toJson(survey);
 
-            if(references.size() > 0) {
-                AWSLambda client = getLambdaClient();
-                for (String ref : references) {
-                    logger.info("NETVOTE: IPFS ref = " + ref);
-                    long timestamp = submission.getSubmissionDate().getTime();
-                    submitToBlockchain(client, submission.getFormId(), submission.getKey().getKey(), ref, timestamp);
-                }
-            }
+            SubmissionObj p = new SubmissionObj();
+            p.setAttachments(attachments);
+            p.setSubmission(submissionJson);
+            p.setOdkFormId(submission.getFormId());
+            p.setOdkSubmitId(submission.getKey().getKey());
+
+            submitToNetrosa(p, cc);
 
         } catch (ODKExternalServiceCredentialsException e) {
             fsc.setOperationalStatus(OperationalStatus.BAD_CREDENTIALS);

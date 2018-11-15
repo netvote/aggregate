@@ -28,13 +28,6 @@ import org.opendatakit.aggregate.datamodel.FormElementModel.ElementType;
  */
 public class NetvoteConsts {
 
-    public static final String PRIVATE_ADD_OBSERVATION = "private-add-observation";
-    public static final String ROPSTEN_ADD_OBSERVATION = "netvote-add-observation";
-    public static final String IPFS_PIN_URL = "https://ipfs.infura.io:5001/api/v0/add?pin=true";
-
-    public static final Map<NetvoteNetwork, String>  networkLambdas = new HashMap<NetvoteNetwork, String>();
-    static {
-        networkLambdas.put(NetvoteNetwork.PRIVATE, PRIVATE_ADD_OBSERVATION);
-        networkLambdas.put(NetvoteNetwork.ROPSTEN, ROPSTEN_ADD_OBSERVATION);
-    }
+    public static final String NETROSA_ENDPOINT = "https://api.netrosa.io/v1";
+    public static final String IPFS_PIN_URL = NETROSA_ENDPOINT+"/ipfs";
 }

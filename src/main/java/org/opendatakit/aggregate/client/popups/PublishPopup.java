@@ -74,6 +74,7 @@ public final class PublishPopup extends AbstractPopupBase {
 
   // to hold the netvote only options
   private final FlexTable nvBar;
+  private final TextBox nvFormId;
   private final TextBox nvAccessKey;
   private final TextBox nvSecretKey;
   private final EnumListBox<NetvoteNetwork> nvNetworkOptions;
@@ -143,19 +144,24 @@ public final class PublishPopup extends AbstractPopupBase {
     nvBar = new FlexTable();
     nvBar.addStyleName("stretch_header");
     // get the URL
-    nvBar.setWidget(1, 0, new HTML("<h3>Access key:</h3>"));
+    nvBar.setWidget(1, 0, new HTML("<h3>Form ID:</h3>"));
+    nvFormId = new TextBox();
+    nvFormId.setVisibleLength(20);
+    nvBar.setWidget(1, 1, nvFormId);
+
+    nvBar.setWidget(2, 0, new HTML("<h3>API Key:</h3>"));
     nvAccessKey = new TextBox();
     nvAccessKey.setVisibleLength(20);
-    nvBar.setWidget(1, 1, nvAccessKey);
+    nvBar.setWidget(2, 1, nvAccessKey);
 
-    nvBar.setWidget(2, 0, new HTML("<h3>Secret key:</h3>"));
+    nvBar.setWidget(3, 0, new HTML("<h3>Submitter Key:</h3>"));
     nvSecretKey = new TextBox();
     nvSecretKey.setVisibleLength(45);
-    nvBar.setWidget(2, 1, nvSecretKey);
+    nvBar.setWidget(3, 1, nvSecretKey);
 
-    nvBar.setWidget(3, 0, new HTML("<h3>Network:</h3>"));
+    nvBar.setWidget(4, 0, new HTML("<h3>Network:</h3>"));
     nvNetworkOptions = new EnumListBox<NetvoteNetwork>(NetvoteNetwork.values(), NV_NETWORK_TOOLTIP, NV_NETWORK_BALLOON);
-    nvBar.setWidget(3, 1, nvNetworkOptions);
+    nvBar.setWidget(4, 1, nvNetworkOptions);
 
     // this is only for google spreadsheets
     gsBar = new FlexTable();
@@ -394,7 +400,7 @@ public final class PublishPopup extends AbstractPopupBase {
             new ReportFailureCallback());
         break;
         case NETVOTE_PUBLISHER:
-        SecureGWT.getServicesAdminService().createNetvotePublisher(formId, nvAccessKey.getText(), nvSecretKey.getText(), nvNetworkOptions.getSelectedValue().toLowerCase(), serviceOp, ownerEmail,
+        SecureGWT.getServicesAdminService().createNetvotePublisher(formId, nvFormId.getText(), nvAccessKey.getText(), nvSecretKey.getText(), nvNetworkOptions.getSelectedValue().toLowerCase(), serviceOp, ownerEmail,
                 new ReportFailureCallback());
         break;
       default: // unknown type

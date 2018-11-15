@@ -17,6 +17,9 @@ public final class NetvotePublisherParameterTable extends CommonFieldsBase {
 
     private static final String TABLE_NAME = "_netvote_publisher";
 
+    private static final DataField FORM_ID_PROPERTY = new DataField("FORM_ID",
+            DataField.DataType.STRING, true, 4096L);
+
     private static final DataField ACCESS_KEY_PROPERTY = new DataField("ACCESS_KEY",
             DataField.DataType.STRING, true, 4096L);
 
@@ -37,13 +40,12 @@ public final class NetvotePublisherParameterTable extends CommonFieldsBase {
 
     NetvotePublisherParameterTable(String schemaName) {
         super(schemaName, TABLE_NAME);
+        fieldList.add(FORM_ID_PROPERTY);
         fieldList.add(ACCESS_KEY_PROPERTY);
         fieldList.add(SECRET_KEY_PROPERTY);
         fieldList.add(NETWORK_PROPERTY);
         fieldList.add(OWNER_EMAIL_PROPERTY);
 
-        networkToLambda.put("ropsten", NetvoteConsts.ROPSTEN_ADD_OBSERVATION);
-        networkToLambda.put("private", NetvoteConsts.PRIVATE_ADD_OBSERVATION);
     }
 
     /**
@@ -71,6 +73,11 @@ public final class NetvotePublisherParameterTable extends CommonFieldsBase {
         }
     }
 
+    public void setFormId(String value) {
+        if (!setStringField(FORM_ID_PROPERTY, value)) {
+            throw new IllegalArgumentException("overflow form Id");
+        }
+    }
 
     public void setAccessKeyProperty(String value) {
         if (!setStringField(ACCESS_KEY_PROPERTY, value)) {
@@ -92,13 +99,9 @@ public final class NetvotePublisherParameterTable extends CommonFieldsBase {
         }
     }
 
-    public String getLambdaName() {
-        String network = this.getNetworkProperty();
-        String lambda = networkToLambda.get(network);
-        if(lambda == null){
-            throw new IllegalStateException("Invalid network found somehow: "+network);
-        }
-        return lambda;
+
+    public String getFormIdProperty() {
+        return getStringField(FORM_ID_PROPERTY);
     }
 
     public String getAccessKeyProperty() {

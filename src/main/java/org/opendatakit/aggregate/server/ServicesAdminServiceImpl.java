@@ -214,7 +214,7 @@ public class ServicesAdminServiceImpl extends RemoteServiceServlet implements
   }
 
   @Override
-  public String createNetvotePublisher(String formId, String accessKey, String secretKey, String network, ExternalServicePublicationOption esOption, String ownerEmail) throws AccessDeniedException, FormNotAvailableException, RequestFailureException, DatastoreFailureException {
+  public String createNetvotePublisher(String formId, String nvFormId, String accessKey, String secretKey, String network, ExternalServicePublicationOption esOption, String ownerEmail) throws AccessDeniedException, FormNotAvailableException, RequestFailureException, DatastoreFailureException {
     HttpServletRequest req = this.getThreadLocalRequest();
     CallingContext cc = ContextFactory.getCallingContext(this, req);
 
@@ -230,7 +230,7 @@ public class ServicesAdminServiceImpl extends RemoteServiceServlet implements
         throw new RequestFailureException(ErrorConsts.FORM_DEFINITION_INVALID);
       }
 
-      NetvotePublisher np = new NetvotePublisher(form, accessKey, secretKey, network, esOption, ownerEmail, cc);
+      NetvotePublisher np = new NetvotePublisher(form, nvFormId, accessKey, secretKey, network, esOption, ownerEmail, cc);
       np.initiate(cc);
       return np.getFormServiceCursor().getUri();
     } catch (ODKOverQuotaException e) {

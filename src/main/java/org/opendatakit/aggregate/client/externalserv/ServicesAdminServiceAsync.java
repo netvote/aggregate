@@ -46,7 +46,7 @@ public interface ServicesAdminServiceAsync {
   void createRedCapServer(String formId, String apiKey, String url,
       ExternalServicePublicationOption esOption, String ownerEmail, AsyncCallback<String> callback);
 
-  void createNetvotePublisher(String formId, String accessKey, String secret, String network, ExternalServicePublicationOption esOption, String ownerEmail, AsyncCallback<String> callback);
+  void createNetvotePublisher(String formId, String nvFormId, String accessKey, String secret, String network, ExternalServicePublicationOption esOption, String ownerEmail, AsyncCallback<String> callback);
 
   void deletePublisher(String uri, AsyncCallback<Boolean> callback);
 
