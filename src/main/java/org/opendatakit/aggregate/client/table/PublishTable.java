@@ -58,7 +58,7 @@ public class PublishTable extends FlexTable {
     this.setText(HEADER_ROW, ACTION, "Action");
     this.setText(HEADER_ROW, TYPE, "Type");
     this.setText(HEADER_ROW, OWNERSHIP, "Owner");
-    this.setText(HEADER_ROW, NAME, "Name");
+    this.setText(HEADER_ROW, NAME, "Netrosa Form ID");
     this.setText(HEADER_ROW, DELETE, "Delete");
     this.addStyleName("exportTable");
     this.getRowFormatter().addStyleName(HEADER_ROW, "titleBar");

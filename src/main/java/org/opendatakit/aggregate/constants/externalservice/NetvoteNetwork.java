@@ -1,8 +1,8 @@
 package org.opendatakit.aggregate.constants.externalservice;
 
 public enum NetvoteNetwork {
-    ROPSTEN("ropsten"),
-    PRIVATE("private");
+    ROPSTEN("netvote"),
+    NETVOTE("ropsten");
 
     private String network;
 

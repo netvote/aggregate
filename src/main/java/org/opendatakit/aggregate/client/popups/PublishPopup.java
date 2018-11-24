@@ -144,17 +144,17 @@ public final class PublishPopup extends AbstractPopupBase {
     nvBar = new FlexTable();
     nvBar.addStyleName("stretch_header");
     // get the URL
-    nvBar.setWidget(1, 0, new HTML("<h3>Form ID:</h3>"));
+    nvBar.setWidget(1, 0, new HTML("<h3>API Key:</h3>"));
     nvFormId = new TextBox();
-    nvFormId.setVisibleLength(20);
+    nvFormId.setVisibleLength(45);
     nvBar.setWidget(1, 1, nvFormId);
 
-    nvBar.setWidget(2, 0, new HTML("<h3>API Key:</h3>"));
+    nvBar.setWidget(2, 0, new HTML("<h3>Admin API ID:</h3>"));
     nvAccessKey = new TextBox();
-    nvAccessKey.setVisibleLength(20);
+    nvAccessKey.setVisibleLength(45);
     nvBar.setWidget(2, 1, nvAccessKey);
 
-    nvBar.setWidget(3, 0, new HTML("<h3>Submitter Key:</h3>"));
+    nvBar.setWidget(3, 0, new HTML("<h3>Admin API Secret:</h3>"));
     nvSecretKey = new TextBox();
     nvSecretKey.setVisibleLength(45);
     nvBar.setWidget(3, 1, nvSecretKey);

@@ -1,10 +1,7 @@
 package org.opendatakit.aggregate.externalservice;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.lambda.AWSLambda;
-import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
+import com.google.common.base.Splitter;
+import com.google.common.collect.Iterables;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -37,8 +34,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
+import java.math.BigInteger;
+import java.security.*;
+import java.security.spec.AlgorithmParameterSpec;
+import java.security.spec.RSAKeyGenParameterSpec;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -158,6 +158,8 @@ public class NetvotePublisher extends AbstractExternalService implements Externa
 
     private class Payload {
         String value;
+        String proof;
+        String publicKey;
 
         public String getValue() {
             return value;
@@ -166,19 +168,35 @@ public class NetvotePublisher extends AbstractExternalService implements Externa
         public void setValue(String value) {
             this.value = value;
         }
+
+        public String getProof() {
+            return proof;
+        }
+
+        public void setProof(String proof) {
+            this.proof = proof;
+        }
+
+        public String getPublicKey() {
+            return publicKey;
+        }
+
+        public void setPublicKey(String publicKey) {
+            this.publicKey = publicKey;
+        }
     }
 
     private class SubmissionObj {
         String odkFormId;
         String odkSubmitId;
-        String submission;
+        OhmageJsonTypes.Survey submission;
         List<String> attachments;
 
-        public String getSubmission() {
+        public OhmageJsonTypes.Survey getSubmission() {
             return submission;
         }
 
-        public void setSubmission(String submission) {
+        public void setSubmission(OhmageJsonTypes.Survey submission) {
             this.submission = submission;
         }
 
@@ -230,13 +248,43 @@ public class NetvotePublisher extends AbstractExternalService implements Externa
         return myMap.get("token");
     }
 
-    private void submitToNetrosa(SubmissionObj obj, CallingContext cc) throws IOException {
+    private static String encodePublicKey(PublicKey pub) {
+        String publicKeyEncoded = Base64.getEncoder().encodeToString(pub.getEncoded());
+        String[] rows = Iterables.toArray(Splitter.fixedLength(64).split(publicKeyEncoded), String.class);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("-----BEGIN PUBLIC KEY-----\n");
+        for(String row : rows){
+            sb.append(row).append("\n");
+        }
+        sb.append("-----END PUBLIC KEY-----");
+        return Base64.getEncoder().encodeToString(sb.toString().getBytes());
+    }
+
+    private void submitToNetrosa(SubmissionObj obj, CallingContext cc) throws IOException, GeneralSecurityException {
         String apiKey = objectEntity.getAccessKeyProperty();
         String formId = objectEntity.getFormIdProperty();
 
+
         String submissionString = gson.toJson(obj);
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+        RSAKeyGenParameterSpec kpgSpec = new RSAKeyGenParameterSpec(2048, BigInteger.valueOf(65537));
+        kpg.initialize(kpgSpec);
+        KeyPair kp = kpg.generateKeyPair();
+        PublicKey pub = kp.getPublic();
+        PrivateKey pvt = kp.getPrivate();
+
+        String publicKeyBase64 = encodePublicKey(pub);
+
+        Signature sign = Signature.getInstance("MD5withRSA");
+        sign.initSign(pvt);
+        sign.update(submissionString.getBytes());
+        String proof = Base64.getEncoder().encodeToString(sign.sign());
+
         Payload p = new Payload();
         p.setValue(submissionString);
+        p.setProof(proof);
+        p.setPublicKey(publicKeyBase64);
 
         String payloadBody = gson.toJson(p);
         logger.info("NETVOTE: Sending payload body="+payloadBody);
@@ -280,7 +328,7 @@ public class NetvotePublisher extends AbstractExternalService implements Externa
 
             SubmissionObj p = new SubmissionObj();
             p.setAttachments(attachments);
-            p.setSubmission(submissionJson);
+            p.setSubmission(survey);
             p.setOdkFormId(submission.getFormId());
             p.setOdkSubmitId(submission.getKey().getKey());
 
@@ -317,6 +365,6 @@ public class NetvotePublisher extends AbstractExternalService implements Externa
 
     @Override
     public String getDescriptiveTargetString() {
-        return "NETVOTE://"+objectEntity.getNetworkProperty();
+        return objectEntity.getFormIdProperty();
     }
 }
